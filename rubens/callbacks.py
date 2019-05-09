@@ -101,10 +101,11 @@ class EarlyStopping(Callback):
     """
 
     def __init__(self,
-                 monitor='val_loss',
                  min_delta=0,
+                 monitor='val_loss',
                  patience=5,
-                 descent=True):
+                 descent=True,
+                 min=None):
         """
         Arguments
         ---------
@@ -121,13 +122,13 @@ class EarlyStopping(Callback):
         self.min_delta = min_delta
         self.patience = patience
         self.descent = descent
+        self.min = min
 
         # Keep track
         self.wait = 0
         self.best_loss = None # Make sure you on_train_start
         self.stopped_epoch = None
         super(EarlyStopping, self).__init__()
-
 
     def on_train_start(self, logs=None):
         self.wait = 0
@@ -146,14 +147,15 @@ class EarlyStopping(Callback):
             self.wait = 1
         # Start waiting patiently
         else:
-            if self.wait >= self.patience:
+            if (self.min is None or epoch >= self.min) and self.wait >= self.patience:
                 self.stopped_epoch = epoch
                 self.trainer.stop_training()
             self.wait += 1
 
     def on_train_end(self, logs=None):
-        if self.stopped_epoch > 0:
-            logger.info('Terminated training by Early Stopping at epoch {:04d}'.format(self.stopped_epoch))
+        if self.stopped_epoch is not None:
+            logger.info('Terminated training early (min delta {:f}) at epoch {:04d}'.format(
+                self.min_delta, self.stopped_epoch))
 
 
 class AbsoluteEarlyStopping(Callback):
@@ -180,7 +182,7 @@ class AbsoluteEarlyStopping(Callback):
         self.last_loss = current_loss
 
     def on_train_end(self, logs=None):
-        if self.stopped_epoch > 0:
+        if self.stopped_epoch is not None:
             logger.info('Terminated training early (limit {:.3f}) at epoch {:d}'.format(
                 self.limit, self.stopped_epoch))
 
