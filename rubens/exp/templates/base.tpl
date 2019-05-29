@@ -6,13 +6,13 @@
 # N = 1
 {% block variables %}
 # Variable declarations go here
-args =
+post_args = --no-gen_logpath --logpath {{ logpath }}.$(Cluster).$(Process) --random_seed $(Process)
 {% endblock %}
 
 Executable  = {{ python }}
 Universe = vanilla
 {% block arguments %}
-Arguments = $(args)
+Arguments = $(args) $(post_args)
 {% endblock %}
 
 {% if prefix and prefix != '' %}
@@ -35,6 +35,7 @@ Log = condor_logs/{{ prefix }}$(cluster).log
 Initialdir = {{ base_path }}
 
 Next_job_start_delay = 1
+# Don't increase this til you have a way of dealing with it
 Max_retries = 3
 # Restart the job when exit code wasn't 0 and it wasn't killed
 On_exit_remove = (ExitBySignal == False) && (ExitCode == 0)
@@ -44,4 +45,3 @@ Getenv = True
 Environment = "{{env_string}}"
 
 Queue $(N)
-

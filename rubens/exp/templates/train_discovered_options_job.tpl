@@ -1,9 +1,6 @@
 {% extends "base.tpl" %}
 {% block variables %}
+{{ super() }}
 config_path = {{ config_path }}
-options_path = {{ args }}
+args = -m psr.train -c $(config_path) {{ args }}
 {% endblock %}
-{% block arguments %}
-Arguments = -m psr.train -c $(config_path) --options $(options_path)
-{% endblock %}
-
