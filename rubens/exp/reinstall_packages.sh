@@ -17,7 +17,7 @@ for d in "${packages[@]}"; do
   [[ ! -d $d ]] && continue
   cd $d
   which "$anaconda/bin/python"
-  "$anaconda/bin/pip" install --upgrade --no-deps --force-reinstall -e .
+  "$anaconda/bin/pip" install --upgrade --no-deps --force-reinstall .
   cd ..
 done
 

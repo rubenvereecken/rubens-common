@@ -48,16 +48,31 @@ def do_configs(spec, prefix=None, path=None, fixed={}):
             config['common'] = fixed
 
         name = config['framework']['prefix']
-        if prefix:
-            name = 'prefix_{}'.format(name)
 
-        # TODO
-        # config['framework']['logpath'] = 'log/' + name
+        if prefix and name:
+            name = '{}_{}'.format(prefix, name)
+        elif prefix and not name:
+            name = prefix
+            config['framework']['prefix'] = name
 
-        print_config(config)
+        assert not find_duplicates_in_config(config)
+
+        # print_config(config)
         config_path = path.joinpath(name + '.conf')
+        print(config_path)
         with config_path.open('w') as f:
             config.write(f)
+
+def find_duplicates_in_config(config: ConfigParser):
+    keys = set()
+    dupes = []
+    for sec in config.sections():
+        for k, v in config.items(sec):
+            if k in keys:
+                dupes.append(k)
+            keys.add(k)
+    return dupes
+
 
 def load_config(config_path) -> ConfigParser:
     config_path = Path(config_path)
@@ -65,7 +80,6 @@ def load_config(config_path) -> ConfigParser:
     config = ConfigParser()
     # config_str = Path(__file__).parent.parent.joinpath('conf/prod.conf').read_text()
     config_str = config_path.read_text()
-    print(config_str)
     assert not '[' in config_str, 'Didnt expect headers'
     config_str = '[DEFAULT]\n' + config_str
     config.read_string(config_str)
