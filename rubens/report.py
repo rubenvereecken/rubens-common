@@ -11,14 +11,13 @@ class CSVDialect(csv.excel_tab):
     pass
 
 class CSVReporter(Reporter):
-    def __init__(self, name, header):
+    def __init__(self, logpath, name, header):
         """
         Header should be an iterable of strings
         or a dict of formatters
         """
-        from psr import config
         header_names = list(header)
-        path = '{}/{}.csv'.format(config.logpath, name)
+        path = '{}/{}.csv'.format(logpath, name)
 
         if os.path.exists(path):
             existing = True

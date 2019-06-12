@@ -44,17 +44,17 @@ class Callback:
 
     # Different experiments will have different lingo, structure's the same
     on_batch_start = on_step_start
-    on_batch_end = on_batch_start
+    on_batch_end = on_step_end
     on_epoch_start = on_episode_start
     on_epoch_end = on_episode_end
 
 
 class WriteEpisodeStats(Callback):
-    def __init__(self, name, fields):
+    def __init__(self, logpath, name, fields):
         self.name = name
         # First field is going to be episode, should not be in here
         self.fields = fields
-        self.reporter = CSVReporter(name, ['episode', *self.fields])
+        self.reporter = CSVReporter(logpath, name, ['episode', *self.fields])
 
     def on_episode_end(self, episode, logs):
         self.reporter.writerow(episode, *[logs.get(field) for field in self.fields])
@@ -93,6 +93,7 @@ class TrainTimer(Callback):
     def on_train_end(self, logs):
         total_train_t = time.time() - self.train_start_t
         logger.debug('Finished training in {:.2f}s'.format(total_train_t))
+        logs['train_time'] = total_train_t
 
 
 class EarlyStopping(Callback):
@@ -136,7 +137,7 @@ class EarlyStopping(Callback):
 
     def on_epoch_end(self, epoch, logs: Dict):
         current_loss = logs.get(self.monitor)
-        assert current_loss is not None
+        assert current_loss is not None, 'Could not find %s' % self.monitor
 
         # Beaten the best so far
         if self.descent and (self.best_loss - current_loss) > self.min_delta:
@@ -208,35 +209,32 @@ class CallbackManager:
             callback.set_params(params)
 
     def set_trainer(self, trainer):
-        self.trainer = trainer
+        jelf.trainer = trainer
         for callback in self.callbacks:
             callback.set_trainer(trainer)
 
     def on_episode_start(self, episode, logs=None):
-        logs = logs or {}
+        logs = logs if logs is None else {}
         for callback in self.callbacks:
             callback.on_episode_start(episode, logs)
             callback.on_epoch_start(episode, logs)
 
     def on_episode_end(self, episode, logs=None):
-        logs = logs or {}
+        logs = logs if logs is not None else {}
         for callback in self.callbacks:
             callback.on_episode_end(episode, logs)
             callback.on_epoch_end(episode, logs)
 
     def on_train_start(self, logs=None):
-        logs = logs or {}
-        # logs['start_time'] = _get_current_time()
+        logs = logs if logs is not None else {}
         for callback in self.callbacks:
             callback.on_train_start(logs)
 
     def on_train_end(self, logs=None):
-        logs = logs or {}
-        # logs['final_loss'] = self.trainer.history.episode_losses[-1],
-        # logs['best_loss'] = min(self.trainer.history.episode_losses),
-        # logs['stop_time'] = _get_current_time()
+        logs = logs if logs is not None else {}
         for callback in self.callbacks:
             callback.on_train_end(logs)
+        return logs
 
     def on_step_end(self, step, logs=None):
         for callback in self.callbacks:
